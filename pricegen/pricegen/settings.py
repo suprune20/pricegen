@@ -128,6 +128,10 @@ STATICFILES_DIRS = (
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 STATIC_URL = '/static/'
 
+# MEDIA_ROOT to be in local_settings.py
+#
+MEDIA_URL = '/media/'
+
 LOGIN_URL = "/login/"
 LOGOUT_URL = "/logout/"
 
