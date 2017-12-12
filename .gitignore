@@ -1,0 +1,6 @@
+local_settings.py
+__pycache__/
+*.py[cod]
+ENV
+pricegen/static/
+pricegen/asset_src/

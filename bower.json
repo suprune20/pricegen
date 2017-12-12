@@ -1,0 +1,23 @@
+{
+  "name": "pricegen",
+  "version": "0.1.0",
+  "authors": [
+    "Eugene Suprun <suprune20@gmail.com>"
+  ],
+  "license": "MIT",
+  "homepage": "http://pricegen/",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery-ui": "~1.10.3",
+    "jquery": "1.7.2",
+    "bootstrap": "2.0.3",
+    "jquery-timepicker": "*"
+  }
+}

@@ -1,0 +1,172 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">{% load i18n staticfiles %}
+<head>
+    <title>{% block title %}{% endblock %}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="Keywords" content="" />
+    <meta name="Description" content="" />
+    {# здесь практически всё доступно #}
+    {# лишь авторизованному пользователю, закрываем от поисковых роботов #}
+    <meta name="robots" content="noindex, nofollow"/>
+    {% block meta_extra %}{% endblock %}
+
+    <!-- Le styles -->
+    <link rel="stylesheet" href="{% static "less/bootstrap.css" %}" type="text/css" />
+    <style type="text/css">
+        body {
+            padding-top: 60px;
+            padding-bottom: 40px;
+        }
+        .sidebar-nav {
+            padding: 9px 0;
+        }
+        #hidden_if_js {
+            margin: 15px;
+        }
+    </style>
+    <noscript>
+        <style>
+            #hidden_if_no_js {
+                display: none;
+            }
+        </style>
+    </noscript>
+
+    {% block jquery %}
+        <link type="text/css" href="{% static "css/custom-theme/jquery-ui-1.8.16.custom.css" %} rel="stylesheet" />
+        <link type="text/css" href="{% static "css/jquery-ui-timepicker.css" %}" rel="stylesheet" />
+        <script type="text/javascript" src="{% static "jquery/jquery.js" %}"></script>
+        <script type="text/javascript" src="{% static "jquery-ui/ui/minified/jquery.ui.datepicker.min.js" %}"></script>
+        <script type="text/javascript" src="{% static "js/jquery-ui-1.8.6.custom.min.js" %}"></script>
+        <script type="text/javascript" src="{% static "js/jquery.ui.timepicker.js" %}"></script>
+    {% endblock %}
+
+    {# assets #}
+    {# css_static #}
+    <link rel="stylesheet" type="text/css" href="{% static "css/base.css" %}" />
+    {# css_static #}
+    <link rel="stylesheet" type="text/css" href="{% static "css/print.css" %}" media="print" />
+
+    <!-- favicon for Internet Explorer -->
+    <link rel="shortcut icon" href="{% static "img/favicon16x16.ico" %}" />
+    <!-- favicon for other browsers: Firefox, Chrome. As for Opera, it needs http:/.../favicon.ico -->
+    <link rel="icon" type="image/png" href="{% static "img/favicon24x24.png" %}" />
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+        <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    {% if close %} <script type="text/javascript">top.close();</script> {% endif %}
+
+    <script type="text/javascript" src="{% static "js/bootstrap-dropdown.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/bootstrap-modal.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/bootstrap-typeahead-ajax.js" %}"></script>
+    
+    <script type="text/javascript" src="{% static "js/utils.js" %}?updated_={{ global_context_STATIC_UPDATED_TIME }}"></script>
+    </script>
+
+    {% block scripts %}{% endblock %}
+</head>
+<body>
+    <div id="hidden_if_no_js">
+        <div class="navbar navbar-fixed-top no-print">
+            <div class="navbar-inner">
+                <div class="container-fluid">
+                    <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </a>
+                    <script>
+                     $(function() {
+                         var name_org = $('#ellypsed_name_org').html();
+                         $('#ellypsed_name_org').html(strTruncate_(name_org, 35, true));
+                     });
+                    </script>
+                    <a class="brand" id="ellypsed_name_org" href="/">{% trans "Организация" %}</a>
+<!--                     {- comment -} -->
+                    <div class="btn-group pull-right dropdown" id="support_menu">
+                        <a data-toggle="dropdown" href="#support_menu" title="{% trans "Служба поддержки" %}"><img src="/static/help-question.png">
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a href="{% url "not_implemented" %}">{% trans "Задать вопрос" %}</a>
+                            </li>
+                        </ul>
+                    </div>
+<!--                     {- endcomment -} -->
+                    <div class="pull-right">
+                        {% if user.is_authenticated %}
+                            <ul class="nav">
+                                <li class="dropdown">
+                                    <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                                        <i class="icon-user icon-white"></i>
+                                        <b>{% if user.last_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}</b>
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        {% comment %}
+                                            {% if user.is_superuser %}
+                                                <li><a href="/admin">{% trans "Администратору" %}</a></li>
+                                                <li class="divider"></li>
+                                            {% endif %}
+                                        {% endcomment %}
+                                        <li><a href="{% url "ulogout" %}">{% trans "Выйти" %}</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        {% else %}
+                            <a class="btn" href="{% url "ulogin" %}">{% trans "Войти" %}</a>
+                        {% endif %}
+                    </div>
+                    {% comment %}
+                    <div class="pull-right nav-collapse">
+                        <ul class="nav">
+                            <li>
+                                <a href="/admin">{% trans "П.меню.справа" %}</a>
+                            </li>
+                        </ul>
+                    </div>
+                    {% endcomment %}
+<!--                     {- comment -} -->
+                    <div class="nav-collapse">
+                        <ul class="nav">
+                            {% if user.is_superuser %}
+                                <li{% if request.path == '/admin' %} class="active"{% endif %}>
+                                    <a href="/admin">{% trans "Администратору" %}</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+<!--                     {- endcomment -} -->
+                </div>
+            </div>
+        </div>
+
+
+        <div class="container-fluid" {% block container_attr_extra %}{% endblock %}>
+            {% if messages %}
+                <ul class="messages no-print">
+                    {% for m in messages %}
+                        <li class="alert alert-{{ m.tags }}">{{ m|safe }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+
+    </div>
+    <noscript>
+        <div id="hidden_if_js">
+            <h1>{% trans "Внимание" %}!
+            <br />
+            <h2 style="color:red">{% trans "У вас отключен JavaScript" %}!</h2>
+            <br />
+            <h3>{% trans "Для отображения страницы вам понадобится включить поддержку JavaScript в настройках браузера" %}.</h3>
+            <h3>{% trans "После этого обновите страницу!" %}.</h3>
+        </div>
+    </noscript>
+</body>
+</html>

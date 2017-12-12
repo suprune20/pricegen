@@ -1,0 +1,89 @@
+.inline {
+    display: inline-block;
+    vertical-align: top;
+}
+
+.inline-button {
+    display: inline-block;
+    vertical-align: top;
+    margin-top: 22px;
+}
+
+fieldset p { display: inline-block; }
+
+#id_time_slots { height: 40px; }
+
+input.hasDatepicker { width: 80px; }
+input.hasTimepicker { width: 80px; }
+.burial-form #id_plan_time { width: 80px; }
+
+.burial-form #id_cemetery { width: 150px; }
+.burial-form #id_operation { width: 100px; }
+
+.burial-form #id_row { width: 60px; }
+.burial-form #id_place_number { width: 60px; }
+.burial-form #id_grave_number { width: 60px; }
+
+select[id$=_day] { width: 50px; }
+select[id$=_month] { width: 100px; }
+select[id$=_year] { width: 70px; }
+
+#id_house { width: 60px; }
+#id_building { width: 55px; }
+#id_block, #id_flat { width: 40px; }
+#id_post_index { width: 110px; }
+#id_info { height: 3em; }
+
+#id_per_page { width: 78px; }
+#id_records_order_by { width: 150px; }
+
+.form-horizontal p { display: inline-block; }
+
+.block-selectable input { width: 200px; }
+.block-selectable input[type=radio] { width: auto; }
+.block-selectable input[type=checkbox] { width: auto; }
+.block-selectable select { width: 200px; }
+
+.block-selectable ul { list-style: none; }
+
+h2.buttons { margin-top: 1em; }
+
+.form-horizontal p.wide { width: 99%; }
+.form-horizontal p.wide textarea { width: 100%; }
+
+.form-horizontal p.narrow input { width: 100px }
+
+span.move-left { position: relative; left: -20px; }
+
+ul.messages { list-style: none; }
+
+tr.burial_blue, tr.burial_blue:hover { background-color: #99ccff }
+tr.burial_green, tr.burial_green:hover { background-color: #62c462 }
+tr.burial_red, tr.burial_red:hover { background-color: #d59999 }
+tr.burial_yellow, tr.burial_yellow:hover { background-color: #e5df35 }
+#add_doctype_href {margin-top: 22px;}
+
+.hidden { display: none; visibility: hidden; }
+
+li.thumbnail-preview-col{
+	margin:8px;
+}
+
+li.thumbnail-preview-col img{
+	width:120px;
+}
+
+.preview-col{
+	padding-right:0px;
+	min-height:300px; 
+	height:600px; 
+	overflow-x:hidden;
+	overflow-y: scroll;
+}
+
+.text-error {
+    color: #b94a48;
+}
+.text-info {
+    color: #3a87ad;
+}
