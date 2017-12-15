@@ -5,13 +5,6 @@ from pricegen.models import BaseModel
 from pricegen.utils import ShortNameValidator
 
 class Org(BaseModel):
-    ROLE_RETAILER = 'retailer'
-    ROLE_SUPPLIER = 'supplier'
-    ROLES = (
-        (ROLE_SUPPLIER, 'Поставщик'),
-        (ROLE_RETAILER, 'Продавец'),
-    )
-
     name = models.CharField('Название', max_length=255, unique=True)
     short_name = models.CharField(
         'Краткое (латинское) название', 
@@ -19,7 +12,6 @@ class Org(BaseModel):
         unique=True,
         validators=(ShortNameValidator(),),
     )
-    role = models.CharField('Тип', max_length=50, choices=ROLES)
 
     class Meta:
         verbose_name = 'Организация'
