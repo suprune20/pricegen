@@ -33,7 +33,7 @@ class Marge(BaseModel):
     kind = models.CharField('Тип', max_length=50, choices=KINDS)
     limit = models.DecimalField(max_digits=15, decimal_places=2,
                                 validators=(MinValueValidator(0),))
-    marge = models.DecimalField(max_digits=4, decimal_places=2,
+    marge = models.DecimalField(max_digits=6, decimal_places=2,
                                 validators=(MinValueValidator(0),))
     class Meta:
         unique_together = ('pickpoint', 'kind', 'limit')
