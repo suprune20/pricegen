@@ -1,3 +1,7 @@
 from django.contrib import admin
 
-# Register your models here.
+from pricegen.models import BaseModelAdmin
+from .models import Org, PickPoint
+
+admin.site.register(Org, BaseModelAdmin)
+admin.site.register(PickPoint, BaseModelAdmin)
