@@ -36,7 +36,7 @@ class Marge(BaseModel):
     marge = models.DecimalField(max_digits=4, decimal_places=2,
                                 validators=(MinValueValidator(0),))
     class Meta:
-        unique_together = ('pickpoint', 'kind', )
+        unique_together = ('pickpoint', 'kind', 'limit')
 
     def __str__(self):
         return 'marge: %s %s' % (self.pickpoint.short_name, self.kind)
