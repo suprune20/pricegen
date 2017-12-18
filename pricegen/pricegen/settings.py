@@ -135,6 +135,8 @@ MEDIA_URL = '/media/'
 LOGIN_URL = "/login/"
 LOGOUT_URL = "/logout/"
 
+# ПАРАМЕТРЫ XLSX файлов --------------------------
+#
 # Максимальное число колонок в файлах Excel (16384),
 # но здесь ограничиваем реальным числом
 #
@@ -144,7 +146,7 @@ XLSX_MAC_COLS = 256
 # в Excel файлах данным, то принимается такое
 # (нумерация здесь, начиная с 1 !!!):
 
-COL_NUMBERS_DEFAULT = dict(
+XLSX_COL_NUMBERS_DEFAULT = dict(
     inner_id_col=1,
     partnumber_col=2,
     brand_col=3,
@@ -153,5 +155,90 @@ COL_NUMBERS_DEFAULT = dict(
     quantity_col=6,
     delivery_time_col=7
 )
+# Вычисляемые колонки. Будут только в вых. файлах
+#
+XLSX_OUTPUT_ONLY_COLS = ('delivery_time_col',)
+
+# Вых. XLSX файл состоит из одного листа. Его имя:
+#
+XLSX_OUTPUT_SHEET_NAME = 'TDSheet'
+
+# Длины и форматирование колонок в выходном файле
+#
+XLSX_COL_STYLES = dict(
+    inner_id_col=dict(
+        width=12,
+        font=dict(
+            name='Arial',
+            size=9,
+        ),
+        alignment=dict(
+            horizontal='left'
+        ),
+    ),
+    partnumber_col=dict(
+        width=18,
+        font=dict(
+            name='Arial',
+            size=9,
+        ),
+        alignment=dict(
+            horizontal='left'
+        ),
+    ),
+    brand_col=dict(
+        width=19,
+        font=dict(
+            name='Arial',
+            size=9,
+        ),
+        alignment=dict(
+            horizontal='left'
+        ),
+    ),
+    item_name_col=dict(
+        width=90,
+        font=dict(
+            name='Arial',
+            size=9,
+            bold=True,
+        ),
+        alignment=dict(
+            horizontal='left'
+        ),
+    ),
+    price_col=dict(
+        width=12,
+        font=dict(
+            name='Arial',
+            size=9,
+        ),
+        alignment=dict(
+            horizontal='right'
+        ),
+    ),
+    quantity_col=dict(
+        width=10,
+        font=dict(
+            name='Arial',
+            size=9,
+        ),
+        alignment=dict(
+            horizontal='right'
+        ),
+    ),
+    delivery_time_col=dict(
+        width=12,
+        font=dict(
+            name='Arial',
+            size=9,
+        ),
+        alignment=dict(
+            horizontal='left'
+        ),
+    ),
+)
+
+# ------------------------------------------------
 
 from pricegen.local_settings import *
