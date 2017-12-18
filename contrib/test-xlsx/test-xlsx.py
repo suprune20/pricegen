@@ -43,7 +43,7 @@ output_col_numbers = dict(
 
 # Это будет вычисляться. А здесь затычка (plug)
 #
-DELIVERY_TYME_PLUG = 120
+DELIVERY_TYME_PLUG = 130
 
 # Для установки в settings.py
 # ---------------------------
@@ -52,7 +52,7 @@ OUTPUT_SHEET_NAME = 'TDSheet'
 
 # Параметры колонок.
 #
-COL_WIDTHS = dict(
+COL_STYLES = dict(
     inner_id_col=dict(
         width=12,
         font=dict(
@@ -105,7 +105,7 @@ COL_WIDTHS = dict(
         ),
     ),
     quantity_col=dict(
-        width=12,
+        width=10,
         font=dict(
             name='Arial',
             size=9,
@@ -129,6 +129,7 @@ COL_WIDTHS = dict(
 # -----------
 
 from openpyxl import load_workbook, Workbook
+from openpyxl.styles import Font, Alignment
 
 def main():
     input_wb = load_workbook(filename = INPUT_FILE)
@@ -168,7 +169,7 @@ def main():
         for i, cell in enumerate(row):
             input_row[i] = cell.value
         output_row = ['' for i in range(output_sheet_rows)]
-        output_row[output_col_numbers['delivery_time_col']] = DELIVERY_TYME_PLUG
+        output_row[output_col_numbers['delivery_time_col']] = time_human(DELIVERY_TYME_PLUG)
         for i_input, i_output in enumerate(map_col_number):
             if i_output is None:
                 # delivery_time_col, уже занесли
@@ -181,11 +182,40 @@ def main():
         #length = input_sheet.column_dimensions[column_cells[0].column].width
         #output_sheet.column_dimensions[column_cells[0].column].width = length
 
+    # Список соответствий
+    # 0-я колонка Excel- файла : 'brand_col'
+    # 1-я колонка Excel- файла : 'item_name_col'
+    #
+    map_output = dict()
+    for item in output_col_numbers:
+        map_output[output_col_numbers[item]] = item
+    for i, column_cells in enumerate(output_sheet.columns):
+        try:
+            item = map_output[i]
+        except KeyError:
+            continue
+        width = COL_STYLES[item]['width']
+        font = Font(**COL_STYLES[item]['font'])
+        alignment = Alignment(**COL_STYLES[item]['alignment'])
+        output_sheet.column_dimensions[column_cells[0].column].width = width
+        output_sheet.column_dimensions[column_cells[0].column].font = font
+        output_sheet.column_dimensions[column_cells[0].column].alignment = alignment
+
     output_book.save(OUTPUT_FILE)
 
-def as_text(value):
-    if value is None:
-        return ""
-    return str(value)
+def time_human(mins):
+    """
+    Время из минут в '?? час. ?? мин.'
+    """
+    mins_ = mins % 60
+    hours_ = int(mins/60)
+    result = ''
+    if hours_:
+        result += '%s час.' % hours_
+    if mins_ and hours_:
+        result += ' '
+    if mins_:
+        result += '%s мин.' % mins_
+    return result
 
 main()
