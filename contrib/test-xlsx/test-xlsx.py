@@ -20,16 +20,25 @@
 INPUT_FILE = '/home/suprune20/musor/test-xlsx/zzap_p30.xlsx'
 OUTPUT_FILE = '/home/suprune20/musor/test-xlsx/output.xlsx'
 
-# Так в этом INPUT_FILE. В другом может быть иначе
+# Так в этих INPUT_FILE, OUTPUT_FILES. В других может быть иначе.
+# Как надо, берется из базы или из settings.
 #
-COL_NUMBERS = dict(
+input_col_numbers = dict(
     inner_id_col=1,
     partnumber_col=2,
     brand_col=3,
     item_name_col=4,
     price_col=5,
     quantity_col=6,
-    delivery_time_col=7
+)
+output_col_numbers = dict(
+    inner_id_col=3,
+    partnumber_col=4,
+    brand_col=1,
+    item_name_col=2,
+    price_col=7,
+    quantity_col=6,
+    delivery_time_col=5
 )
 
 # Это будет вычисляться. А здесь затычка (plug)
@@ -129,16 +138,48 @@ def main():
     output_sheet = output_book.active
     output_sheet.title = OUTPUT_SHEET_NAME
 
+    # В базе данных номера колонок начинаются с 1.
+    # Приведем эти номера к "машинному виду, т.е. с нуля
+    #
+    # Заодно получим число колонок в файлах:
+    #
+    input_sheet_rows = 0
+    output_sheet_rows = 0
+    
+    for item in input_col_numbers:
+        input_sheet_rows = max(input_sheet_rows, input_col_numbers[item])
+        input_col_numbers[item] -=1
+    for item in output_col_numbers:
+        output_sheet_rows = max(output_sheet_rows, output_col_numbers[item])
+        output_col_numbers[item] -=1
+    
+    # Теперь список соответствий
+    # 0 (inner_id_col in input) : 2 (inner_id_col in output)
+    # 1 (partnumber_col in input) : 3 (partnumber_col in output)
+    # ...
+    #
+    map_col_number = [None for i in range(output_sheet_rows)]
+    for item in input_col_numbers:
+        map_col_number[input_col_numbers[item]] = output_col_numbers[item]
+
     rows = input_sheet.rows
     for row in rows:
-        output_row = list()
-        for cell in row:
-            output_row.append(cell.value)
+        input_row = ['' for i in range(max(input_sheet_rows ,output_sheet_rows))]
+        for i, cell in enumerate(row):
+            input_row[i] = cell.value
+        output_row = ['' for i in range(output_sheet_rows)]
+        output_row[output_col_numbers['delivery_time_col']] = DELIVERY_TYME_PLUG
+        for i_input, i_output in enumerate(map_col_number):
+            if i_output is None:
+                # delivery_time_col, уже занесли
+                pass
+            else:
+                output_row[i_output] = input_row[i_input]
         output_sheet.append(output_row)
 
-    for i, column_cells in enumerate(input_sheet.columns):
-        length = input_sheet.column_dimensions[column_cells[0].column].width
-        output_sheet.column_dimensions[column_cells[0].column].width = length
+    #for i, column_cells in enumerate(input_sheet.columns):
+        #length = input_sheet.column_dimensions[column_cells[0].column].width
+        #output_sheet.column_dimensions[column_cells[0].column].width = length
 
     output_book.save(OUTPUT_FILE)
 

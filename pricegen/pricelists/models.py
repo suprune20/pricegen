@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.conf import settings
 
 from pricegen.models import BaseModel
 
@@ -8,13 +9,20 @@ class ExcelFormat(BaseModel):
 
     org = models.OneToOneField('users.Org', verbose_name='Организация',
                             on_delete=models.CASCADE)
-    inner_id_col = models.PositiveIntegerField(default=1)
-    partnumber_col = models.PositiveIntegerField(default=2)
-    brand_col = models.PositiveIntegerField(default=3)
-    item_name_col = models.PositiveIntegerField(default=4)
-    price_col = models.PositiveIntegerField(default=5)
-    quantity_col = models.PositiveIntegerField(default=6)
-    delivery_time_col = models.PositiveIntegerField(default=7)
+    inner_id_col = models.PositiveIntegerField(default=1,
+                                               validators=(MaxValueValidator(settings.XLSX_MAC_COLS),))
+    partnumber_col = models.PositiveIntegerField(default=2,
+                                               validators=(MaxValueValidator(settings.XLSX_MAC_COLS),))
+    brand_col = models.PositiveIntegerField(default=3,
+                                               validators=(MaxValueValidator(settings.XLSX_MAC_COLS),))
+    item_name_col = models.PositiveIntegerField(default=4,
+                                               validators=(MaxValueValidator(settings.XLSX_MAC_COLS),))
+    price_col = models.PositiveIntegerField(default=5,
+                                               validators=(MaxValueValidator(settings.XLSX_MAC_COLS),))
+    quantity_col = models.PositiveIntegerField(default=6,
+                                               validators=(MaxValueValidator(settings.XLSX_MAC_COLS),))
+    delivery_time_col = models.PositiveIntegerField(default=7,
+                                               validators=(MaxValueValidator(settings.XLSX_MAC_COLS),))
 
     def __str__(self):
         return 'excelformat: %s (%s)' % (self.org.short_name, self.org.name,)

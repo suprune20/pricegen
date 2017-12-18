@@ -135,4 +135,23 @@ MEDIA_URL = '/media/'
 LOGIN_URL = "/login/"
 LOGOUT_URL = "/logout/"
 
+# Максимальное число колонок в файлах Excel (16384),
+# но здесь ограничиваем реальным числом
+#
+XLSX_MAC_COLS = 256
+
+# Если организация не подала свое соответствие колонок
+# в Excel файлах данным, то принимается такое
+# (нумерация здесь, начиная с 1 !!!):
+
+COL_NUMBERS_DEFAULT = dict(
+    inner_id_col=1,
+    partnumber_col=2,
+    brand_col=3,
+    item_name_col=4,
+    price_col=5,
+    quantity_col=6,
+    delivery_time_col=7
+)
+
 from pricegen.local_settings import *
