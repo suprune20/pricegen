@@ -135,6 +135,10 @@ MEDIA_URL = '/media/'
 LOGIN_URL = "/login/"
 LOGOUT_URL = "/logout/"
 
+# Корневой каталог, где генерируются pricelists
+#
+FS_ROOT_FOLDER = '/home/pricegen/pricegen'
+
 # ПАРАМЕТРЫ XLSX файлов --------------------------
 #
 # Максимальное число колонок в файлах Excel (16384),
