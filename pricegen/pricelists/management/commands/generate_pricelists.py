@@ -12,7 +12,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         root_folder = options['root_folder']
 
-        # Нельзя запускать, если другие аналогичные процессы крутятся
+        # Нельзя запускать, если другой аналогичные процесс крутится
         #
         ps = subprocess.check_output(('ps', '-ef',)).decode('utf-8').split('\n')
         userid = pwd.getpwuid(os.getuid()).pw_name
@@ -20,7 +20,7 @@ class Command(BaseCommand):
         for p in ps:
             # пропускаем процессы с другим именем
             #
-            if not re.search(r'manage.py\s+generate_pricelists\s+%s' % re.escape(root_folder), p):
+            if not re.search(r'manage\.py\s+generate_pricelists\s+%s' % re.escape(root_folder), p):
                 continue
             # пропускаем наш процесс: с нашим именем пользователя и pid процесса
             #
