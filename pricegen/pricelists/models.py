@@ -85,3 +85,33 @@ class PickPointDelivery(BaseModel):
             self.pickpoint_from.org.short_name, self.pickpoint_from.short_name,
             self.pickpoint_to.org.short_name, self.pickpoint_to.short_name,
         )
+
+class ExcelTempo(BaseModel):
+    """
+    ВрЕменная таблица для считываемых из Excel файлов данных
+    """
+    inner_id = models.CharField(max_length=255)
+    partnumber = models.CharField(max_length=255)
+    brand = models.CharField(max_length=255, db_index=True)
+    item_name = models.CharField(max_length=255)
+    price = models.DecimalField(max_digits=15, decimal_places=2)
+    quantity = models.DecimalField(max_digits=15, decimal_places=2)
+    delivery_time = models.PositiveIntegerField()
+
+    def delivery_time_human(self):
+        """
+        Время из минут в '?? час. ?? мин.'
+        """
+        mins = self.delivery_time
+        if not mins:
+            return ''
+        mins_ = mins % 60
+        hours_ = int(mins / 60)
+        result = ''
+        if hours_:
+            result += '%s час.' % hours_
+        if mins_ and hours_:
+            result += ' '
+        if mins_:
+            result += '%s мин.' % mins_
+        return result

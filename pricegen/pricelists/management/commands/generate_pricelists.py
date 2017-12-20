@@ -13,7 +13,7 @@
 #
 # Тогда каталог будет выглядеть:
 #
-# pricegen/                                                         (1)
+# ...pricegen/                                                         (1)
 #           korona/
 #               suppliers/                                          (2)
 #                   /krynka/
@@ -93,27 +93,66 @@ class Command(BaseCommand):
                 print('ERROR: Failed to create %s folder' % log_folder)
                 quit()
 
-        # Цикл (1). Читаем по всем организациям, все они могут быть продавцами
+        # Глобальный цикл. Выходим из него, когда не будет файлов для обработки
         #
-        for vendor in Org.objects.all():
-            vendor_folder = os.path.join(root_folder, vendor.short_name, 'suppliers')
-            print (vendor_folder)
-            
-            # Цикл (2) . По каталогам, имена которых организации-поставщики
+        while True:
+            found_input = False
+
+            # Цикл (1). Читаем по всем организациям, все они могут быть продавцами
             #
-            try:
-                suppliers_folders = os.listdir(vendor_folder)
-            except FileNotFoundError:
-                # Например, нет каталога pricegen/korona/suppliers
+            for vendor in Org.objects.all():
+                vendor_folder = os.path.join(root_folder, vendor.short_name)
+                
+                # Цикл (2) . По каталогам, имена которых организации-поставщики
                 #
-                continue
-            
-            self.write_log('что-то')
-            self.write_log('что-то', 'log')
-            #input_files = list()
-            #for f in os.listdir(vendor_folder)
-                #input_xlsx = os.join(vendor_folder, f)
-                #if isfile(input_xlsx) and not islink(input_xlsx):
+                try:
+                    vendors_suppliers_folder = os.path.join(vendor_folder, 'suppliers')
+                    suppliers_folders = os.listdir(vendors_suppliers_folder)
+                except FileNotFoundError:
+                    # Например, нет каталога ...pricegen/krynka/suppliers.
+                    # Если krynka - только поставщик, но никак не покупатель, то ОК
+                    #
+                    continue
+                # Есть ли продавца pickpoints. Заодно запомним pickpoints
+                #
+                vendor_pickpoints = PickPoint.objects.filter(org=vendor)
+                if not vendor_pickpoints:
+                    continue
+                for supplier_folder in suppliers_folders:
+                    path_to_supplier_folder = os.path.join(vendors_suppliers_folder, supplier_folder)
+                    if not os.path.isdir(path_to_supplier_folder):
+                        continue
+                    try:
+                        Org.objects.get(short_name=supplier_folder)
+                    except Org.DoesNotExist:
+                        self.write_log('%s, no appropriate organization: %s' % (
+                                path_to_supplier_folder,
+                                supplier_folder
+                            ), 'error')
+                    xlsx_files = []
+                    for xlsx_file in os.listdir(path_to_supplier_folder):
+                        path_to_xlsx_file = os.path.join(path_to_supplier_folder, xlsx_file)
+                        if not os.path.isfile(path_to_xlsx_file) or \
+                               os.path.islink(path_to_xlsx_file) or \
+                           not re.search(r'\.xlsx$', xlsx_file, flags=re.I):
+                            continue
+                        stat = os.stat(path_to_xlsx_file)
+                        xlsx_files.append(dict(
+                            name=xlsx_file,
+                            mtime=stat.st_mtime
+                        ))
+                        self.write_log('Found input xlsx "%s", supplier %s to vendor %s' % (
+                                xlsx_file,
+                                supplier_folder,
+                                vendor.short_name,
+                            ),'log')
+                    xlsx_files = sorted(xlsx_files, key=lambda d: d['mtime'])
+                    xlsx_files = [d['name'] for d in xlsx_files]
+                    for xlsx_file in xlsx_files:
+                        pass
+
+            if not found_input:
+                break
 
     def write_log(self, rec, kind='stat'):
         """
