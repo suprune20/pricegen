@@ -42,10 +42,14 @@
 import time, os, pwd, re, datetime
 import subprocess
 
+from openpyxl import load_workbook, Workbook
+from openpyxl.styles import Font, Alignment
+
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from users.models import Org, PickPoint
+from pricelists.models import ExcelFormat, ExcelTempo
 
 class Command(BaseCommand):
     help = "generate pricelists after input files detected"
@@ -93,7 +97,7 @@ class Command(BaseCommand):
                 print('ERROR: Failed to create %s folder' % log_folder)
                 quit()
 
-        # Глобальный цикл. Выходим из него, когда не будет файлов для обработки
+        # Глобальный цикл. Выходим из него, когда не найдем файлов для обработки
         #
         while True:
             found_input = False
@@ -117,6 +121,9 @@ class Command(BaseCommand):
                 #
                 vendor_pickpoints = PickPoint.objects.filter(org=vendor)
                 if not vendor_pickpoints:
+                    self.write_log('No pickpoints at vendor organization: %s' % (
+                            vendor.short_name
+                        ), 'error')
                     continue
                 for supplier_folder in suppliers_folders:
                     path_to_supplier_folder = os.path.join(vendors_suppliers_folder, supplier_folder)
@@ -149,10 +156,51 @@ class Command(BaseCommand):
                     xlsx_files = sorted(xlsx_files, key=lambda d: d['mtime'])
                     xlsx_files = [d['name'] for d in xlsx_files]
                     for xlsx_file in xlsx_files:
-                        pass
+                        found_input = True
+                        path_to_xlsx_file = os.path.join(path_to_supplier_folder, xlsx_file)
+                        self.load_xlsx_to_tempo(path_to_xlsx_file, vendor)
+                        found_input = False
+                        # os.unlink(path_to_xlsx_file)
 
             if not found_input:
                 break
+
+    def load_xlsx_to_tempo(self, path_to_xlsx_file, vendor):
+        """
+        Загрузить Excel файл во временную таблицу
+        
+        Параметры:
+            path_to_xlsx_file
+            vendor: организация, у нее ищем формат Excel файла
+        """
+        input_col_numbers = self.xlsx_col_numbers(vendor, input_=True)
+
+
+    def xlsx_col_numbers(self, org, input_):
+        """
+        Получить номера колонок в Excel файле
+        
+        Параметр:
+            vendor:     организация, у нее ищем формат Excel файла
+            input_:     True для входного файла, False для выходного
+        """
+        try:
+            xf = ExcelFormat.objects.get(org=org)
+            input_col_numbers = dict(
+                inner_id_col=xf.inner_id_col,
+                partnumber_col=xf.partnumber_col,
+                brand_col=xf.brand_col,
+                item_name_col=xf.item_name_col,
+                price_col=xf.price_col,
+                quantity_col=xf.quantity_col,
+                delivery_time_col=xf.delivery_time_col,
+            )
+        except ExcelFormat.DoesNotExist:
+            input_col_numbers = settings.XLSX_COL_NUMBERS_DEFAULT.copy()
+        if input_:
+            for k in settings.XLSX_OUTPUT_ONLY_COLS:
+                del input_col_numbers[k]
+        return input_col_numbers
 
     def write_log(self, rec, kind='stat'):
         """
