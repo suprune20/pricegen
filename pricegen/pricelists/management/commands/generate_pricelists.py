@@ -158,7 +158,13 @@ class Command(BaseCommand):
                     for xlsx_file in xlsx_files:
                         found_input = True
                         path_to_xlsx_file = os.path.join(path_to_supplier_folder, xlsx_file)
-                        self.load_xlsx_to_tempo(path_to_xlsx_file, vendor)
+                        if not self.load_xlsx_to_tempo(path_to_xlsx_file, vendor):
+                            self.write_log('Error reading ExcelX file: %s' % (
+                                    path_to_xlsx_file,
+                                ), 'error')
+                            # Поместить в карантин
+                            #
+                            continue
                         found_input = False
                         # os.unlink(path_to_xlsx_file)
 
@@ -174,7 +180,12 @@ class Command(BaseCommand):
             vendor: организация, у нее ищем формат Excel файла
         """
         input_col_numbers = self.xlsx_col_numbers(vendor, input_=True)
-
+        try:
+            wb = load_workbook(filename=path_to_xlsx_file)
+        except:
+            return False
+        sheet = wb.active
+        return True
 
     def xlsx_col_numbers(self, org, input_):
         """
@@ -200,6 +211,8 @@ class Command(BaseCommand):
         if input_:
             for k in settings.XLSX_OUTPUT_ONLY_COLS:
                 del input_col_numbers[k]
+        for item in input_col_numbers:
+            input_col_numbers[item] -=1
         return input_col_numbers
 
     def write_log(self, rec, kind='stat'):
