@@ -135,9 +135,18 @@ MEDIA_URL = '/media/'
 LOGIN_URL = "/login/"
 LOGOUT_URL = "/logout/"
 
-# Корневой каталог, где генерируются pricelists
+# Зарезервированные имена и суффиксы
 #
-FS_ROOT_FOLDER = '/home/pricegen/pricegen'
+FS_LOG_FOLDER = 'LOG'
+FS_STAT_PREFIX = 'pricegen-stat-'
+FS_LOG_PREFIX = 'pricegen-log-'
+FS_ERROR_PREFIX = 'pricegen-error-'
+FS_LOG_EXT = 'log'
+
+# Команды архивации, деархивации
+#
+CMD_ZIP = 'xz -z'
+CMD_UNZIP = 'xz -d'
 
 # ПАРАМЕТРЫ XLSX файлов --------------------------
 #
