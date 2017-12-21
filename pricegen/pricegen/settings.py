@@ -138,6 +138,7 @@ LOGOUT_URL = "/logout/"
 # Зарезервированные имена и суффиксы
 #
 FS_LOG_FOLDER = 'LOG'
+FS_QUARANTINE_FOLDER = 'QUARANTINE'
 FS_STAT_PREFIX = 'pricegen-stat-'
 FS_LOG_PREFIX = 'pricegen-log-'
 FS_ERROR_PREFIX = 'pricegen-error-'

@@ -39,7 +39,7 @@
 #               pricegen-err-ГГГГММДД.log (текущий)
 #               pricegen-err-ГГГГММДД.log.gz (за предыдущие даты)
 
-import time, os, pwd, re, datetime
+import time, os, pwd, re, datetime, shutil
 import subprocess
 
 from openpyxl import load_workbook, Workbook
@@ -49,7 +49,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from users.models import Org, PickPoint
-from pricelists.models import ExcelFormat, ExcelTempo
+from pricelists.models import ExcelFormat, ExcelTempo, PickPointDelivery, PickPointBrand
 
 class Command(BaseCommand):
     help = "generate pricelists after input files detected"
@@ -89,13 +89,15 @@ class Command(BaseCommand):
 
         # Создать каталог для журналов, если он не существует
         #
+        quarantine_folder = os.path.join(root_folder, settings.FS_QUARANTINE_FOLDER)
         log_folder = os.path.join(root_folder, settings.FS_LOG_FOLDER)
-        if not os.path.isdir(log_folder):
-            try:
-                os.mkdir(log_folder)
-            except OSError:
-                print('ERROR: Failed to create %s folder' % log_folder)
-                quit()
+        for folder in (quarantine_folder, log_folder,):
+            if not os.path.isdir(folder):
+                try:
+                    os.mkdir(folder)
+                except OSError:
+                    print('ERROR: Failed to create %s folder' % folder)
+                    quit()
 
         # Глобальный цикл. Выходим из него, когда не найдем файлов для обработки
         #
@@ -105,6 +107,11 @@ class Command(BaseCommand):
             # Цикл (1). Читаем по всем организациям, все они могут быть продавцами
             #
             for vendor in Org.objects.all():
+                
+                # Если у продавца нет pickpoints или не найден supplier
+                # по имени папки suppliers/<supplier>, то входные 
+                #
+                ignore_vendor_input = False
                 vendor_folder = os.path.join(root_folder, vendor.short_name)
                 
                 # Цикл (2) . По каталогам, имена которых организации-поставщики
@@ -119,20 +126,23 @@ class Command(BaseCommand):
                     continue
                 # Есть ли продавца pickpoints. Заодно запомним pickpoints
                 #
-                vendor_pickpoints = PickPoint.objects.filter(org=vendor)
-                if not vendor_pickpoints:
-                    self.write_log('No pickpoints at vendor organization: %s' % (
+                pickpoint_deliveries_to = PickPointDelivery.objects.filter(pickpoint_to__org=vendor). \
+                    select_related('pickpoint_from')
+                if not pickpoint_deliveries_to:
+                    self.write_log("No pickpoint deliveries at vendor organization: %s. Move all vendor's input, if any, to quarantine" % (
                             vendor.short_name
                         ), 'error')
-                    continue
+                    ignore_vendor_input = True
                 for supplier_folder in suppliers_folders:
+                    ignore_supplier_input = False
                     path_to_supplier_folder = os.path.join(vendors_suppliers_folder, supplier_folder)
                     if not os.path.isdir(path_to_supplier_folder):
                         continue
                     try:
                         Org.objects.get(short_name=supplier_folder)
                     except Org.DoesNotExist:
-                        self.write_log('%s, no appropriate organization: %s' % (
+                        ignore_supplier_input = True
+                        self.write_log("%s, no appropriate organization: %s.  Move all input to the supplier, if any, to quarantine" % (
                                 path_to_supplier_folder,
                                 supplier_folder
                             ), 'error')
@@ -142,6 +152,9 @@ class Command(BaseCommand):
                         if not os.path.isfile(path_to_xlsx_file) or \
                                os.path.islink(path_to_xlsx_file) or \
                            not re.search(r'\.xlsx$', xlsx_file, flags=re.I):
+                            continue
+                        if ignore_vendor_input or ignore_supplier_input:
+                            self.put_to_quarantine(path_to_xlsx_file)
                             continue
                         stat = os.stat(path_to_xlsx_file)
                         xlsx_files.append(dict(
@@ -153,6 +166,8 @@ class Command(BaseCommand):
                                 supplier_folder,
                                 vendor.short_name,
                             ),'log')
+                    if ignore_vendor_input or ignore_supplier_input:
+                        continue
                     xlsx_files = sorted(xlsx_files, key=lambda d: d['mtime'])
                     xlsx_files = [d['name'] for d in xlsx_files]
                     for xlsx_file in xlsx_files:
@@ -162,14 +177,35 @@ class Command(BaseCommand):
                             self.write_log('Error reading ExcelX file: %s' % (
                                     path_to_xlsx_file,
                                 ), 'error')
-                            # Поместить в карантин
-                            #
+                            self.put_to_quarantine(path_to_xlsx_file)
                             continue
+                        pickpoints_to = list()
+                        for pickpoint_delivery_to in pickpoint_deliveries_to:
+                            pickpoint_to = pickpoint_delivery_to.pickpoint_to
+                            for pickpoint_to_brand in PickPointBrand.objects.filter(pickpoint=pickpoint_to):
+                                # Здесь вычислить минимальное время доставки этого brand
+                                # к этому pickpint_to
+                                #
+                                pickpoint_to_brand_name = pickpoint_to_brand.brand.name
+                                for xlsx_rec in ExcelTempo.objects.filter(brand__iexact=pickpoint_to_brand_name):
+                                    pass
                         found_input = False
                         # os.unlink(path_to_xlsx_file)
 
             if not found_input:
                 break
+
+    def put_to_quarantine(self, path_to_xlsx_file):
+        utc_time = int(time.time())
+        dt = datetime.datetime.fromtimestamp(utc_time)
+        dt_folder = dt.strftime('%Y-%m-%d~%H-%M-%S')
+        dt_folder = os.path.join(self.root_folder, settings.FS_QUARANTINE_FOLDER, dt_folder)
+        os.mkdir(dt_folder)
+        shutil.move(path_to_xlsx_file, dt_folder)
+        self.write_log('%s moved to %s' % (
+                path_to_xlsx_file,
+                dt_folder,
+            ), 'error')
 
     def load_xlsx_to_tempo(self, path_to_xlsx_file, vendor):
         """
@@ -185,6 +221,16 @@ class Command(BaseCommand):
         except:
             return False
         sheet = wb.active
+        ExcelTempo.objects.all().delete()
+        rows = sheet.rows
+        for row in rows:
+            rec = ExcelTempo()
+            for field in input_col_numbers:
+                # a_field_col -> a_field
+                db_field = field[:-4]
+                # print (field, input_col_numbers[field], row[input_col_numbers[field]])
+                setattr(rec, db_field, row[input_col_numbers[field]].value)
+            rec.save()
         return True
 
     def xlsx_col_numbers(self, org, input_):

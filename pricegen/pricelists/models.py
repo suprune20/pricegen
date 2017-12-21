@@ -86,7 +86,7 @@ class PickPointDelivery(BaseModel):
             self.pickpoint_to.org.short_name, self.pickpoint_to.short_name,
         )
 
-class ExcelTempo(BaseModel):
+class ExcelTempo(models.Model):
     """
     ВрЕменная таблица для считываемых из Excel файлов данных
     """
@@ -94,9 +94,9 @@ class ExcelTempo(BaseModel):
     partnumber = models.CharField(max_length=255)
     brand = models.CharField(max_length=255, db_index=True)
     item_name = models.CharField(max_length=255)
-    price = models.DecimalField(max_digits=15, decimal_places=2)
+    price = models.DecimalField(max_digits=15, decimal_places=2, db_index=True)
     quantity = models.DecimalField(max_digits=15, decimal_places=2)
-    delivery_time = models.PositiveIntegerField()
+    delivery_time = models.PositiveIntegerField(default=0)
 
     def delivery_time_human(self):
         """
