@@ -97,21 +97,3 @@ class ExcelTempo(models.Model):
     price = models.DecimalField(max_digits=15, decimal_places=2, db_index=True)
     quantity = models.DecimalField(max_digits=15, decimal_places=2)
     delivery_time = models.PositiveIntegerField(default=0)
-
-    def delivery_time_human(self):
-        """
-        Время из минут в '?? час. ?? мин.'
-        """
-        mins = self.delivery_time
-        if not mins:
-            return ''
-        mins_ = mins % 60
-        hours_ = int(mins / 60)
-        result = ''
-        if hours_:
-            result += '%s час.' % hours_
-        if mins_ and hours_:
-            result += ' '
-        if mins_:
-            result += '%s мин.' % mins_
-        return result

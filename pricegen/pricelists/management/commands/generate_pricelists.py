@@ -47,6 +47,9 @@ from openpyxl.styles import Font, Alignment
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.db.models import Min
+
+from pricegen.utils import time_human
 
 from users.models import Org, PickPoint
 from pricelists.models import ExcelFormat, ExcelTempo, PickPointDelivery, PickPointBrand
@@ -184,9 +187,20 @@ class Command(BaseCommand):
                             pickpoint_to = pickpoint_delivery_to.pickpoint_to
                             for pickpoint_to_brand in PickPointBrand.objects.filter(pickpoint=pickpoint_to):
                                 # Здесь вычислить минимальное время доставки этого brand
-                                # к этому pickpint_to
+                                # к этому pickpint_to, mvd
                                 #
+                                mvd = PickPointDelivery.objects.filter(
+                                    pickpoint_to__org=vendor,
+                                    pickpoint_from__pickpointbrand__brand=pickpoint_to_brand.brand,
+                                ).aggregate(Min('delivery_time'))
+                                mvd = mvd['delivery_time__min']
+                                if mvd is None:
+                                    # Нет среди складов поставщиков такого, чтоб там был
+                                    # этот brand
+                                    continue
+                                mvd_human = time_human(mvd)
                                 pickpoint_to_brand_name = pickpoint_to_brand.brand.name
+                                print (pickpoint_to_brand_name, mvd_human)
                                 for xlsx_rec in ExcelTempo.objects.filter(brand__iexact=pickpoint_to_brand_name):
                                     pass
                         found_input = False
