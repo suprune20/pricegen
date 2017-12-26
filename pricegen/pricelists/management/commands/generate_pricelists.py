@@ -52,7 +52,8 @@ from django.db.models import Min
 from pricegen.utils import time_human
 
 from users.models import Org, PickPoint
-from pricelists.models import ExcelFormat, ExcelTempo, PickPointDelivery, PickPointBrand
+from pricelists.models import ExcelFormat, ExcelTempo, PickPointDelivery, PickPointBrand, \
+    Marge
 
 class Command(BaseCommand):
     help = "generate pricelists after input files detected"
@@ -185,9 +186,13 @@ class Command(BaseCommand):
                         pickpoints_to = list()
                         for pickpoint_delivery_to in pickpoint_deliveries_to:
                             pickpoint_to = pickpoint_delivery_to.pickpoint_to
+                            # Запоминаем marge
+                            #
+                            marges = self.get_marges(pickpoint_to)
+                            print(marges)
                             for pickpoint_to_brand in PickPointBrand.objects.filter(pickpoint=pickpoint_to):
                                 # Здесь вычислить минимальное время доставки этого brand
-                                # к этому pickpint_to, mvd
+                                # к этому pickpoint_to, mvd
                                 #
                                 mvd = PickPointDelivery.objects.filter(
                                     pickpoint_to__org=vendor,
@@ -201,13 +206,28 @@ class Command(BaseCommand):
                                 mvd_human = time_human(mvd)
                                 pickpoint_to_brand_name = pickpoint_to_brand.brand.name
                                 print (pickpoint_to_brand_name, mvd_human)
-                                for xlsx_rec in ExcelTempo.objects.filter(brand__iexact=pickpoint_to_brand_name):
+                                for xlsx_rec in ExcelTempo.objects.filter(
+                                   brand__iexact=pickpoint_to_brand_name,
+                                   ).order_by('row'):
                                     pass
                         found_input = False
                         # os.unlink(path_to_xlsx_file)
 
             if not found_input:
                 break
+
+    def get_marges(self, pickpoint_to):
+        """
+        Получить маржи по пункту продажи, сортированные по limit
+        """
+        marges = list()
+        for marge in Marge.objects.filter(pickpoint=pickpoint_to). \
+            order_by('pickpoint', 'limit'):
+            marges.append(dict(
+                limit=marge.limit,
+                marge=marge.marge,
+            ))
+        return marges
 
     def put_to_quarantine(self, path_to_xlsx_file):
         utc_time = int(time.time())
@@ -237,8 +257,11 @@ class Command(BaseCommand):
         sheet = wb.active
         ExcelTempo.objects.all().delete()
         rows = sheet.rows
+        nrow = 0
         for row in rows:
+            nrow += 1
             rec = ExcelTempo()
+            rec.row = nrow
             for field in input_col_numbers:
                 # a_field_col -> a_field
                 db_field = field[:-4]

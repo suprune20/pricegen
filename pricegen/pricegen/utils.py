@@ -35,4 +35,4 @@ def round_decimal(num, precision=0):
         return decimal.Decimal(num).quantize(DECPLACES, rounding=decimal.ROUND_HALF_UP)
     else:
         DECPLACES2 = DECPLACES/2
-        return ((decimal.Decimal(num) + DECPLACES2)//DECPLACES)*DECPLACES
+        return ((decimal.Decimal(num) + DECPLACES2) // DECPLACES) * DECPLACES

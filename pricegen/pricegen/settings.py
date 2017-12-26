@@ -135,6 +135,10 @@ MEDIA_URL = '/media/'
 LOGIN_URL = "/login/"
 LOGOUT_URL = "/logout/"
 
+# Округление при вычислениях цен (10 в степени)
+#
+CALC_ROUND_EXPONENT = 0
+
 # Зарезервированные имена и суффиксы
 #
 FS_LOG_FOLDER = 'LOG'

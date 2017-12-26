@@ -90,10 +90,15 @@ class ExcelTempo(models.Model):
     """
     ВрЕменная таблица для считываемых из Excel файлов данных
     """
+    row = models.PositiveIntegerField(default=0)
     inner_id = models.CharField(max_length=255)
     partnumber = models.CharField(max_length=255)
     brand = models.CharField(max_length=255, db_index=True)
     item_name = models.CharField(max_length=255)
-    price = models.DecimalField(max_digits=15, decimal_places=2, db_index=True)
+    price = models.DecimalField(max_digits=15, decimal_places=2)
     quantity = models.DecimalField(max_digits=15, decimal_places=2)
-    delivery_time = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        index_together = [ ("brand", "row", ), ]
+        ordering = ['row',]
+    
