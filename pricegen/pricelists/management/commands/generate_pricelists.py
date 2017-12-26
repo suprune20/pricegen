@@ -128,6 +128,10 @@ class Command(BaseCommand):
                     # Если krynka - только поставщик, но никак не покупатель, то ОК
                     #
                     continue
+                outbox_folder = os.path.join(vendor_folder, settings.FS_VENDOR_OUTBOX_FOLDER)
+                if not os.path.isdir(outbox_folder):
+                    os.mkdir(outbox_folder)
+
                 # Есть ли продавца pickpoints. Заодно запомним pickpoints
                 #
                 pickpoint_deliveries_to = PickPointDelivery.objects.filter(pickpoint_to__org=vendor). \
@@ -194,6 +198,11 @@ class Command(BaseCommand):
                         pickpoints_to = list()
                         for pickpoint_delivery_to in pickpoint_deliveries_to:
                             pickpoint_to = pickpoint_delivery_to.pickpoint_to
+                            # Будут ли какие-то записи в
+                            #   vendor_pickpoint_retail_ГГГГММДДЧЧММ.xlsx
+                            #   vendor_pickpoint_wholesale_ГГГГММДДЧЧММ.xlsx
+                            #
+                            is_smth_to_xlsx = False
                             marges = self.get_marges(pickpoint_to)
                             print(marges)
                             for pickpoint_to_brand in PickPointBrand.objects.filter(pickpoint=pickpoint_to):
@@ -215,7 +224,35 @@ class Command(BaseCommand):
                                 for xlsx_rec in ExcelTempo.objects.filter(
                                    brand__iexact=pickpoint_to_brand_name,
                                    ).order_by('row'):
-                                    pass
+                                    if not is_smth_to_xlsx:
+                                        output_book_retail = Workbook()
+                                        output_sheet_retail = output_book_retail.active
+                                        output_sheet_retail.title = settings.XLSX_OUTPUT_SHEET_NAME
+                                        output_book_wholesale = Workbook()
+                                        output_sheet_wholesale = output_book_wholesale.active
+                                        output_sheet_wholesale.title = settings.XLSX_OUTPUT_SHEET_NAME
+                                        is_smth_to_xlsx = True
+                                    output_row = ['' for i in range(output_sheet_rows)]
+                                    output_row[output_col_numbers['inner_id_col']] = xlsx_rec.inner_id
+                                    output_row[output_col_numbers['partnumber_col']] = xlsx_rec.partnumber
+                                    output_row[output_col_numbers['brand_col']] = xlsx_rec.brand
+                                    output_row[output_col_numbers['item_name_col']] = xlsx_rec.item_name
+                                    output_row[output_col_numbers['price_col']] = str(xlsx_rec.price)
+                                    output_row[output_col_numbers['quantity_col']] = str(xlsx_rec.quantity)
+                                    output_row[output_col_numbers['delivery_time_col']] = mvd_human
+                                    output_sheet_retail.append(output_row)
+                                    output_sheet_wholesale.append(output_row)
+                                if is_smth_to_xlsx:
+                                    now_ = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+                                    parts = dict(
+                                        vendor=vendor.short_name,
+                                        pickpoint=pickpoint_to.short_name,
+                                        now_=now_,
+                                    )
+                                    xlsx_retail_name = "%(vendor)s_%(pickpoint)s_retail_%(now_)s.xlsx" % parts
+                                    xlsx_wholesale_name = "%(vendor)s_%(pickpoint)s_wholesale_%(now_)s.xlsx" % parts
+                                    output_book_retail.save(os.path.join(outbox_folder, xlsx_retail_name))
+                                    output_book_wholesale.save(os.path.join(outbox_folder, xlsx_wholesale_name))
                         found_input = False
                         # os.unlink(path_to_xlsx_file)
 
