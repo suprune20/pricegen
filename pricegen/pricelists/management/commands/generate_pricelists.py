@@ -49,7 +49,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.models import Min
 
-from pricegen.utils import time_human
+from pricegen.utils import time_human, round_decimal
 
 from users.models import Org, PickPoint
 from pricelists.models import ExcelFormat, ExcelTempo, PickPointDelivery, PickPointBrand, \
@@ -203,8 +203,9 @@ class Command(BaseCommand):
                             #   vendor_pickpoint_wholesale_ГГГГММДДЧЧММ.xlsx
                             #
                             is_smth_to_xlsx = False
-                            marges = self.get_marges(pickpoint_to)
-                            print(marges)
+                            are_quantities_int = True
+                            marges_retail = self.get_marges('retail', pickpoint_to)
+                            marges_wholesale = self.get_marges('wholesale', pickpoint_to)
                             for pickpoint_to_brand in PickPointBrand.objects.filter(pickpoint=pickpoint_to):
                                 # Здесь вычислить минимальное время доставки этого brand
                                 # к этому pickpoint_to, mvd
@@ -238,15 +239,21 @@ class Command(BaseCommand):
                                     output_row[output_col_numbers['partnumber_col']] = xlsx_rec.partnumber
                                     output_row[output_col_numbers['brand_col']] = xlsx_rec.brand
                                     output_row[output_col_numbers['item_name_col']] = xlsx_rec.item_name
-                                    output_row[output_col_numbers['price_col']] = str(xlsx_rec.price)
                                     output_row[output_col_numbers['quantity_col']] = str(xlsx_rec.quantity)
+                                    if are_quantities_int and xlsx_rec.quantity - int(xlsx_rec.quantity):
+                                        are_quantities_int = False
                                     output_row[output_col_numbers['delivery_time_col']] = mvd_human
+
+                                    output_row[output_col_numbers['price_col']] = \
+                                        str(self.apply_marge(xlsx_rec.price, marges_retail))
                                     output_sheet_retail.append(output_row)
+
+                                    output_row[output_col_numbers['price_col']] = \
+                                        str(self.apply_marge(xlsx_rec.price, marges_wholesale))
                                     output_sheet_wholesale.append(output_row)
                                     n_rows += 1
-                            if is_smth_to_xlsx:
-                                self.xlsx_format(output_sheet_retail, output_col_numbers, n_rows)
-                                self.xlsx_format(output_sheet_wholesale, output_col_numbers, n_rows)
+                                self.xlsx_format(output_sheet_retail, output_col_numbers, n_rows, are_quantities_int)
+                                self.xlsx_format(output_sheet_wholesale, output_col_numbers, n_rows, are_quantities_int)
                                 now_ = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
                                 parts = dict(
                                     vendor=vendor.short_name,
@@ -263,7 +270,14 @@ class Command(BaseCommand):
             if not found_input:
                 break
 
-    def xlsx_format(self, output_sheet, output_col_numbers, n_rows):
+    def apply_marge(self, num, marges):
+        """
+        Применить маржу с округлением
+        """
+        result = num
+        return round_decimal(result)
+
+    def xlsx_format(self, output_sheet, output_col_numbers, n_rows, are_quantities_int):
         """
         Форматирование выходного xlsx файла
         """
@@ -290,16 +304,18 @@ class Command(BaseCommand):
             # font, alignment по каждой ячейке из колонки
             #
             for n_row in range(n_rows):
+                if are_quantities_int and item == 'quantity_col':
+                    column_cells[n_row].value = int(float(column_cells[n_row].value))
                 column_cells[n_row].font = font
                 column_cells[n_row].alignment = alignment
 
 
-    def get_marges(self, pickpoint_to):
+    def get_marges(self, kind, pickpoint_to):
         """
         Получить маржи по пункту продажи, сортированные по limit
         """
         marges = list()
-        for marge in Marge.objects.filter(pickpoint=pickpoint_to). \
+        for marge in Marge.objects.filter(pickpoint=pickpoint_to, kind=kind). \
             order_by('pickpoint', 'limit'):
             marges.append(dict(
                 limit=marge.limit,
