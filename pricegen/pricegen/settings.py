@@ -216,7 +216,7 @@ XLSX_COL_STYLES = dict(
         ),
     ),
     item_name_col=dict(
-        width=90,
+        width=80,
         font=dict(
             name='Arial',
             size=9,

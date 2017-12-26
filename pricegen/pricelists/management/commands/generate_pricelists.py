@@ -231,6 +231,7 @@ class Command(BaseCommand):
                                         output_book_wholesale = Workbook()
                                         output_sheet_wholesale = output_book_wholesale.active
                                         output_sheet_wholesale.title = settings.XLSX_OUTPUT_SHEET_NAME
+                                        n_rows = 0
                                         is_smth_to_xlsx = True
                                     output_row = ['' for i in range(output_sheet_rows)]
                                     output_row[output_col_numbers['inner_id_col']] = xlsx_rec.inner_id
@@ -242,22 +243,56 @@ class Command(BaseCommand):
                                     output_row[output_col_numbers['delivery_time_col']] = mvd_human
                                     output_sheet_retail.append(output_row)
                                     output_sheet_wholesale.append(output_row)
-                                if is_smth_to_xlsx:
-                                    now_ = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-                                    parts = dict(
-                                        vendor=vendor.short_name,
-                                        pickpoint=pickpoint_to.short_name,
-                                        now_=now_,
-                                    )
-                                    xlsx_retail_name = "%(vendor)s_%(pickpoint)s_retail_%(now_)s.xlsx" % parts
-                                    xlsx_wholesale_name = "%(vendor)s_%(pickpoint)s_wholesale_%(now_)s.xlsx" % parts
-                                    output_book_retail.save(os.path.join(outbox_folder, xlsx_retail_name))
-                                    output_book_wholesale.save(os.path.join(outbox_folder, xlsx_wholesale_name))
+                                    n_rows += 1
+                            if is_smth_to_xlsx:
+                                self.xlsx_format(output_sheet_retail, output_col_numbers, n_rows)
+                                self.xlsx_format(output_sheet_wholesale, output_col_numbers, n_rows)
+                                now_ = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+                                parts = dict(
+                                    vendor=vendor.short_name,
+                                    pickpoint=pickpoint_to.short_name,
+                                    now_=now_,
+                                )
+                                xlsx_retail_name = "%(vendor)s_%(pickpoint)s_retail_%(now_)s.xlsx" % parts
+                                xlsx_wholesale_name = "%(vendor)s_%(pickpoint)s_wholesale_%(now_)s.xlsx" % parts
+                                output_book_retail.save(os.path.join(outbox_folder, xlsx_retail_name))
+                                output_book_wholesale.save(os.path.join(outbox_folder, xlsx_wholesale_name))
                         found_input = False
                         # os.unlink(path_to_xlsx_file)
 
             if not found_input:
                 break
+
+    def xlsx_format(self, output_sheet, output_col_numbers, n_rows):
+        """
+        Форматирование выходного xlsx файла
+        """
+
+        # Список соответствий
+        # 0-я колонка Excel- файла : 'brand_col'
+        # 1-я колонка Excel- файла : 'item_name_col'
+        #
+        map_output = dict()
+        for item in output_col_numbers:
+            map_output[output_col_numbers[item]] = item
+        for i, column_cells in enumerate(output_sheet.columns):
+            try:
+                item = map_output[i]
+            except KeyError:
+                continue
+            width = settings.XLSX_COL_STYLES[item]['width']
+            font = Font(**settings.XLSX_COL_STYLES[item]['font'])
+            alignment = Alignment(**settings.XLSX_COL_STYLES[item]['alignment'])
+            output_sheet.column_dimensions[column_cells[0].column].width = width
+            
+            # А это по всей колонке не задашь! Для LibreOffice так можно,
+            # а вот чтоб Microsoft Excel воспринимал, надо устанавливать
+            # font, alignment по каждой ячейке из колонки
+            #
+            for n_row in range(n_rows):
+                column_cells[n_row].font = font
+                column_cells[n_row].alignment = alignment
+
 
     def get_marges(self, pickpoint_to):
         """
