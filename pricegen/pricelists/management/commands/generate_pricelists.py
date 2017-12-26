@@ -132,18 +132,26 @@ class Command(BaseCommand):
                 #
                 pickpoint_deliveries_to = PickPointDelivery.objects.filter(pickpoint_to__org=vendor). \
                     select_related('pickpoint_from')
+
                 if not pickpoint_deliveries_to:
                     self.write_log("No pickpoint deliveries at vendor organization: %s. Move all vendor's input, if any, to quarantine" % (
                             vendor.short_name
                         ), 'error')
                     ignore_vendor_input = True
+                else:
+                    output_col_numbers = self.xlsx_col_numbers(vendor, input_=False)
+                    output_sheet_rows = 0
+                    for item in output_col_numbers:
+                        output_sheet_rows = max(output_sheet_rows, output_col_numbers[item])
+                    output_sheet_rows += 1
+
                 for supplier_folder in suppliers_folders:
                     ignore_supplier_input = False
                     path_to_supplier_folder = os.path.join(vendors_suppliers_folder, supplier_folder)
                     if not os.path.isdir(path_to_supplier_folder):
                         continue
                     try:
-                        Org.objects.get(short_name=supplier_folder)
+                        supplier = Org.objects.get(short_name=supplier_folder)
                     except Org.DoesNotExist:
                         ignore_supplier_input = True
                         self.write_log("%s, no appropriate organization: %s.  Move all input to the supplier, if any, to quarantine" % (
@@ -177,7 +185,7 @@ class Command(BaseCommand):
                     for xlsx_file in xlsx_files:
                         found_input = True
                         path_to_xlsx_file = os.path.join(path_to_supplier_folder, xlsx_file)
-                        if not self.load_xlsx_to_tempo(path_to_xlsx_file, vendor):
+                        if not self.load_xlsx_to_tempo(path_to_xlsx_file, supplier):
                             self.write_log('Error reading ExcelX file: %s' % (
                                     path_to_xlsx_file,
                                 ), 'error')
@@ -186,8 +194,6 @@ class Command(BaseCommand):
                         pickpoints_to = list()
                         for pickpoint_delivery_to in pickpoint_deliveries_to:
                             pickpoint_to = pickpoint_delivery_to.pickpoint_to
-                            # Запоминаем marge
-                            #
                             marges = self.get_marges(pickpoint_to)
                             print(marges)
                             for pickpoint_to_brand in PickPointBrand.objects.filter(pickpoint=pickpoint_to):
@@ -241,15 +247,15 @@ class Command(BaseCommand):
                 dt_folder,
             ), 'error')
 
-    def load_xlsx_to_tempo(self, path_to_xlsx_file, vendor):
+    def load_xlsx_to_tempo(self, path_to_xlsx_file, supplier):
         """
         Загрузить Excel файл во временную таблицу
         
         Параметры:
             path_to_xlsx_file
-            vendor: организация, у нее ищем формат Excel файла
+            supplier: организация, у нее ищем формат Excel файла
         """
-        input_col_numbers = self.xlsx_col_numbers(vendor, input_=True)
+        input_col_numbers = self.xlsx_col_numbers(supplier, input_=True)
         try:
             wb = load_workbook(filename=path_to_xlsx_file)
         except:
