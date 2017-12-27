@@ -91,7 +91,7 @@ class Command(BaseCommand):
             print('Another same process running. Do not want problems. Quit.')
             quit()
 
-        self.write_log('Started generate pricelists','log')
+        self.write_log('Started generate pricelists', 'log')
 
         # Создать каталог для журналов, если он не существует
         #
@@ -118,7 +118,7 @@ class Command(BaseCommand):
 
             # Цикл (1). Читаем по всем организациям, все они могут быть продавцами
             #
-            self.write_log("Started search in vendors' folders",'log')
+            self.write_log("Started search in vendors' folders", 'log')
             for vendor in Org.objects.all():
                 
                 # Если у продавца нет pickpoints или не найден supplier
@@ -316,10 +316,10 @@ class Command(BaseCommand):
                                 settings.ZIP_EXT,
                             ),'log')
 
-            self.write_log("End of search in vendors' folders",'log')
+            self.write_log("End of search in vendors' folders", 'log')
             if not found_input:
                 break
-        self.write_log("No files found in vendors' folders. Quit.",'log')
+        self.write_log("No files found in vendors' folders. Quit.", 'log')
 
     def check_same_fname(self, folder, fname):
         """
@@ -357,6 +357,12 @@ class Command(BaseCommand):
         Применить маржу с округлением
         """
         result = num
+        if marges:
+            for marge in marges:
+                if num < marge['limit']:
+                    break
+                else:
+                    result = num * (1 + marge['marge'] / 100)
         return round_decimal(result)
 
     def xlsx_format(self, output_sheet, output_col_numbers, n_rows, are_quantities_int):
