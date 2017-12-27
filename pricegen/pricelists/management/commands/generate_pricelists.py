@@ -266,8 +266,14 @@ class Command(BaseCommand):
                                 pickpoint=pickpoint_to.short_name,
                                 now_=now_,
                             )
-                            xlsx_retail_name = "%(vendor)s_%(pickpoint)s_retail_%(now_)s.xlsx" % parts
-                            xlsx_wholesale_name = "%(vendor)s_%(pickpoint)s_wholesale_%(now_)s.xlsx" % parts
+                            xlsx_retail_name = self.check_same_fname(
+                                outbox_folder,
+                                "%(vendor)s_%(pickpoint)s_retail_%(now_)s.xlsx" % parts,
+                            )
+                            xlsx_wholesale_name = self.check_same_fname(
+                                outbox_folder,
+                                "%(vendor)s_%(pickpoint)s_wholesale_%(now_)s.xlsx" % parts,
+                            )
                             tmp_xlsx_retail = os.path.join(tmp_folder, xlsx_retail_name)
                             tmp_xlsx_wholesale = os.path.join(tmp_folder, xlsx_wholesale_name)
                             output_book_retail.save(tmp_xlsx_retail)
@@ -309,6 +315,37 @@ class Command(BaseCommand):
 
             if not found_input:
                 break
+
+    def check_same_fname(self, folder, fname):
+        """
+        Проверить, есть ли такое fname в folder, и если есть изменить fname
+
+        Имя изменяется так: fname.ext -> fname-1.ext
+        """
+        if not os.path.isfile(os.path.join(folder, fname)):
+            return fname
+        m = re.search(r'^(.+)\.([^\.]+)$', fname)
+        if m:
+            fname_ = m.group(1)
+            point_ = '.'
+            ext_ = m.group(2)
+        else:
+            fname_ = fname_
+            point_ = ''
+            ext_ = ''
+        add_ = 1
+        while True:
+            result = '%s-%s%s%s' % (
+                    fname_,
+                    str(add_),
+                    point_,
+                    ext_,
+            )
+            if os.path.isfile(os.path.join(folder, result)):
+                add_ += 1
+            else:
+                break
+        return result
 
     def apply_marge(self, num, marges):
         """
