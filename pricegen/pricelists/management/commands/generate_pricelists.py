@@ -91,6 +91,8 @@ class Command(BaseCommand):
             print('Another same process running. Do not want problems. Quit.')
             quit()
 
+        self.write_log('Started generate pricelists','log')
+
         # Создать каталог для журналов, если он не существует
         #
         quarantine_folder = os.path.join(root_folder, settings.FS_QUARANTINE_FOLDER)
@@ -116,6 +118,7 @@ class Command(BaseCommand):
 
             # Цикл (1). Читаем по всем организациям, все они могут быть продавцами
             #
+            self.write_log("Started search in vendors' folders",'log')
             for vendor in Org.objects.all():
                 
                 # Если у продавца нет pickpoints или не найден supplier
@@ -183,16 +186,16 @@ class Command(BaseCommand):
                             name=xlsx_file,
                             mtime=stat.st_mtime
                         ))
-                        self.write_log('Found input "%s", supplier %s to vendor %s' % (
-                                xlsx_file,
-                                supplier_folder,
-                                vendor.short_name,
-                            ),'log')
                     if ignore_vendor_input or ignore_supplier_input:
                         continue
                     xlsx_files = sorted(xlsx_files, key=lambda d: d['mtime'])
                     for xlsx_file_dict in xlsx_files:
                         xlsx_file = xlsx_file_dict['name']
+                        self.write_log('Found input "%s", supplier %s to vendor %s' % (
+                                xlsx_file,
+                                supplier_folder,
+                                vendor.short_name,
+                            ),'log')
                         found_input = True
                         path_to_xlsx_file = os.path.join(path_to_supplier_folder, xlsx_file)
                         if not self.load_xlsx_to_tempo(path_to_xlsx_file, supplier):
@@ -280,11 +283,11 @@ class Command(BaseCommand):
                             output_book_wholesale.save(tmp_xlsx_wholesale)
                             shutil.move(tmp_xlsx_retail, outbox_folder)
                             shutil.move(tmp_xlsx_wholesale, outbox_folder)
-                            self.write_log('Result %s is in  %s outbox folder' % (
+                            self.write_log('Result %s is in %s outbox folder' % (
                                     xlsx_retail_name,
                                     vendor.short_name,
                                 ),'log')
-                            self.write_log('Result %s is in  %s outbox folder' % (
+                            self.write_log('Result %s is in %s outbox folder' % (
                                     xlsx_wholesale_name,
                                     vendor.short_name,
                                 ),'log')
@@ -313,8 +316,10 @@ class Command(BaseCommand):
                                 settings.ZIP_EXT,
                             ),'log')
 
+            self.write_log("End of search in vendors' folders",'log')
             if not found_input:
                 break
+        self.write_log("No files found in vendors' folders. Quit.",'log')
 
     def check_same_fname(self, folder, fname):
         """
