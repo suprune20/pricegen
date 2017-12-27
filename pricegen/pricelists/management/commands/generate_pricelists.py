@@ -91,8 +91,6 @@ class Command(BaseCommand):
             print('Another same process running. Do not want problems. Quit.')
             quit()
 
-        self.write_log('Started generate pricelists', 'log')
-
         # Создать каталог для журналов, если он не существует
         #
         quarantine_folder = os.path.join(root_folder, settings.FS_QUARANTINE_FOLDER)
@@ -111,6 +109,8 @@ class Command(BaseCommand):
             if os.path.isfile(path_to_tmp_file):
                 os.unlink(path_to_tmp_file)
 
+        self.write_log('Started generate pricelists', 'log')
+
         # Глобальный цикл. Выходим из него, когда не найдем файлов для обработки
         #
         while True:
@@ -125,12 +125,12 @@ class Command(BaseCommand):
                 # по имени папки suppliers/<supplier>, то входные 
                 #
                 ignore_vendor_input = False
-                vendor_folder = os.path.join(root_folder, vendor.short_name)
+                vendor_folder = os.path.join(root_folder, settings.FS_VENDORS_FOLDER, vendor.short_name)
                 
                 # Цикл (2) . По каталогам, имена которых организации-поставщики
                 #
                 try:
-                    vendors_suppliers_folder = os.path.join(vendor_folder, 'suppliers')
+                    vendors_suppliers_folder = os.path.join(vendor_folder, settings.FS_SUPPLIERS_FOLDER)
                     suppliers_folders = os.listdir(vendors_suppliers_folder)
                 except FileNotFoundError:
                     # Например, нет каталога ...pricegen/krynka/suppliers.

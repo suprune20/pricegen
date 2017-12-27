@@ -45,6 +45,7 @@ class Marge(BaseModel):
                                 validators=(MinValueValidator(0),))
     class Meta:
         unique_together = ('pickpoint', 'kind', 'limit')
+        ordering = ('pickpoint', 'kind', 'limit')
 
     def __str__(self):
         return 'marge: %s %s' % (self.pickpoint.short_name, self.kind)

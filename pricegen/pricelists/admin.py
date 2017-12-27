@@ -4,7 +4,12 @@ from pricegen.models import BaseModelAdmin
 from .models import ExcelFormat, Marge, Brand, PickPointBrand, PickPointDelivery, ExcelTempo
 
 admin.site.register(ExcelFormat, BaseModelAdmin)
-admin.site.register(Marge, BaseModelAdmin)
+
+class MargeAdmin(BaseModelAdmin):
+    list_display = ('pickpoint', 'kind', 'limit', 'marge')
+
+admin.site.register(Marge, MargeAdmin)
+
 admin.site.register(Brand, BaseModelAdmin)
 admin.site.register(PickPointBrand, BaseModelAdmin)
 admin.site.register(PickPointDelivery, BaseModelAdmin)

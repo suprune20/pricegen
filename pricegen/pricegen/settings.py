@@ -141,11 +141,13 @@ CALC_ROUND_EXPONENT = 0
 
 # Зарезервированные имена и суффиксы
 #
-FS_LOG_FOLDER = 'LOG'
+FS_LOG_FOLDER = 'log'
+FS_VENDORS_FOLDER = 'vendors'
+FS_SUPPLIERS_FOLDER = 'suppliers'
 FS_VENDOR_OUTBOX_FOLDER = 'outbox'
-FS_QUARANTINE_FOLDER = 'QUARANTINE'
-FS_TMP_FOLDER = 'TMP'
-FS_ARCHIVE_FOLDER = 'ARCHIVE'
+FS_QUARANTINE_FOLDER = 'quarantine'
+FS_TMP_FOLDER = 'tmp'
+FS_ARCHIVE_FOLDER = 'archive'
 FS_STAT_PREFIX = 'pricegen-stat-'
 FS_LOG_PREFIX = 'pricegen-log-'
 FS_ERROR_PREFIX = 'pricegen-error-'
