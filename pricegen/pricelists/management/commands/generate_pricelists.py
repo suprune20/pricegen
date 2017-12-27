@@ -95,13 +95,19 @@ class Command(BaseCommand):
         #
         quarantine_folder = os.path.join(root_folder, settings.FS_QUARANTINE_FOLDER)
         log_folder = os.path.join(root_folder, settings.FS_LOG_FOLDER)
-        for folder in (quarantine_folder, log_folder,):
+        tmp_folder = os.path.join(root_folder, settings.FS_TMP_FOLDER)
+        archive_folder = os.path.join(root_folder, settings.FS_ARCHIVE_FOLDER)
+        for folder in (quarantine_folder, log_folder, tmp_folder, archive_folder,):
             if not os.path.isdir(folder):
                 try:
                     os.mkdir(folder)
                 except OSError:
                     print('ERROR: Failed to create %s folder' % folder)
                     quit()
+        for tmp_file in os.listdir(tmp_folder):
+            path_to_tmp_file = os.path.join(tmp_folder, tmp_file)
+            if os.path.isfile(path_to_tmp_file):
+                os.unlink(path_to_tmp_file)
 
         # Глобальный цикл. Выходим из него, когда не найдем файлов для обработки
         #
@@ -177,7 +183,7 @@ class Command(BaseCommand):
                             name=xlsx_file,
                             mtime=stat.st_mtime
                         ))
-                        self.write_log('Found input xlsx "%s", supplier %s to vendor %s' % (
+                        self.write_log('Found input "%s", supplier %s to vendor %s' % (
                                 xlsx_file,
                                 supplier_folder,
                                 vendor.short_name,
@@ -185,8 +191,8 @@ class Command(BaseCommand):
                     if ignore_vendor_input or ignore_supplier_input:
                         continue
                     xlsx_files = sorted(xlsx_files, key=lambda d: d['mtime'])
-                    xlsx_files = [d['name'] for d in xlsx_files]
-                    for xlsx_file in xlsx_files:
+                    for xlsx_file_dict in xlsx_files:
+                        xlsx_file = xlsx_file_dict['name']
                         found_input = True
                         path_to_xlsx_file = os.path.join(path_to_supplier_folder, xlsx_file)
                         if not self.load_xlsx_to_tempo(path_to_xlsx_file, supplier):
@@ -196,13 +202,13 @@ class Command(BaseCommand):
                             self.put_to_quarantine(path_to_xlsx_file)
                             continue
                         pickpoints_to = list()
+                        is_smth_to_xlsx = False
                         for pickpoint_delivery_to in pickpoint_deliveries_to:
                             pickpoint_to = pickpoint_delivery_to.pickpoint_to
                             # Будут ли какие-то записи в
                             #   vendor_pickpoint_retail_ГГГГММДДЧЧММ.xlsx
                             #   vendor_pickpoint_wholesale_ГГГГММДДЧЧММ.xlsx
                             #
-                            is_smth_to_xlsx = False
                             are_quantities_int = True
                             marges_retail = self.get_marges('retail', pickpoint_to)
                             marges_wholesale = self.get_marges('wholesale', pickpoint_to)
@@ -221,7 +227,6 @@ class Command(BaseCommand):
                                     continue
                                 mvd_human = time_human(mvd)
                                 pickpoint_to_brand_name = pickpoint_to_brand.brand.name
-                                print (pickpoint_to_brand_name, mvd_human)
                                 for xlsx_rec in ExcelTempo.objects.filter(
                                    brand__iexact=pickpoint_to_brand_name,
                                    ).order_by('row'):
@@ -252,20 +257,55 @@ class Command(BaseCommand):
                                         str(self.apply_marge(xlsx_rec.price, marges_wholesale))
                                     output_sheet_wholesale.append(output_row)
                                     n_rows += 1
-                                self.xlsx_format(output_sheet_retail, output_col_numbers, n_rows, are_quantities_int)
-                                self.xlsx_format(output_sheet_wholesale, output_col_numbers, n_rows, are_quantities_int)
-                                now_ = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-                                parts = dict(
-                                    vendor=vendor.short_name,
-                                    pickpoint=pickpoint_to.short_name,
-                                    now_=now_,
-                                )
-                                xlsx_retail_name = "%(vendor)s_%(pickpoint)s_retail_%(now_)s.xlsx" % parts
-                                xlsx_wholesale_name = "%(vendor)s_%(pickpoint)s_wholesale_%(now_)s.xlsx" % parts
-                                output_book_retail.save(os.path.join(outbox_folder, xlsx_retail_name))
-                                output_book_wholesale.save(os.path.join(outbox_folder, xlsx_wholesale_name))
-                        found_input = False
-                        # os.unlink(path_to_xlsx_file)
+
+                            self.xlsx_format(output_sheet_retail, output_col_numbers, n_rows, are_quantities_int)
+                            self.xlsx_format(output_sheet_wholesale, output_col_numbers, n_rows, are_quantities_int)
+                            now_ = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+                            parts = dict(
+                                vendor=vendor.short_name,
+                                pickpoint=pickpoint_to.short_name,
+                                now_=now_,
+                            )
+                            xlsx_retail_name = "%(vendor)s_%(pickpoint)s_retail_%(now_)s.xlsx" % parts
+                            xlsx_wholesale_name = "%(vendor)s_%(pickpoint)s_wholesale_%(now_)s.xlsx" % parts
+                            tmp_xlsx_retail = os.path.join(tmp_folder, xlsx_retail_name)
+                            tmp_xlsx_wholesale = os.path.join(tmp_folder, xlsx_wholesale_name)
+                            output_book_retail.save(tmp_xlsx_retail)
+                            output_book_wholesale.save(tmp_xlsx_wholesale)
+                            shutil.move(tmp_xlsx_retail, outbox_folder)
+                            shutil.move(tmp_xlsx_wholesale, outbox_folder)
+                            self.write_log('Result %s is in  %s outbox folder' % (
+                                    xlsx_retail_name,
+                                    vendor.short_name,
+                                ),'log')
+                            self.write_log('Result %s is in  %s outbox folder' % (
+                                    xlsx_wholesale_name,
+                                    vendor.short_name,
+                                ),'log')
+                        dt_xlsx_input = datetime.datetime.fromtimestamp(xlsx_file_dict['mtime'])
+                        dt_xlsx_input = dt_xlsx_input.strftime('%Y%m%d%H%M%S')
+                        xlsx_archive_file = '%s~%s_%s.xlsx' % (
+                            vendor.short_name,
+                            supplier.short_name,
+                            dt_xlsx_input
+                        )
+                        path_to_xlsx_archive_file = os.path.join(archive_folder, xlsx_archive_file) 
+                        try:
+                            shutil.move(path_to_xlsx_file, path_to_xlsx_archive_file)
+                        except shutil.Error:
+                            # Может быть, если такой файл в архиве уже есть
+                            # А вдруг раньше недо-переместили в архив?
+                            # Если это не учесть, может быть бесконечный цикл
+                            #
+                            os.unlink(path_to_xlsx_archive_file)
+                            shutil.move(path_to_xlsx_file, path_to_xlsx_archive_file)
+                        self.zip_(path_to_xlsx_archive_file)
+                        self.write_log('%s input %s archived as %s.%s' % (
+                                vendor.short_name,
+                                xlsx_file,
+                                xlsx_archive_file,
+                                settings.ZIP_EXT,
+                            ),'log')
 
             if not found_input:
                 break
@@ -392,6 +432,16 @@ class Command(BaseCommand):
             input_col_numbers[item] -=1
         return input_col_numbers
 
+    def zip_(self, path_to_fname):
+        """
+        Запаковать файл
+        """
+        zipped_file = '%s.%s' % (path_to_fname, settings.ZIP_EXT)
+        if os.path.isfile(zipped_file):
+            os.unlink(zipped_file)
+        os.system('%s %s' % (settings.CMD_ZIP, path_to_fname))
+        return zipped_file
+
     def write_log(self, rec, kind='stat'):
         """
         Запись в журнал, статистики или ошибок: kind = stat или error или log
@@ -428,7 +478,7 @@ class Command(BaseCommand):
                        re.escape(log_name_prefix),
                        re.escape(settings.FS_LOG_EXT),
                    ), f):
-                    os.system('%s %s' % (settings.CMD_ZIP, fname))
+                    self.zip_(fname)
         if not self.fd[kind]:
             self.fd[kind] = open(log_name, 'a')
         if kind == 'stat':

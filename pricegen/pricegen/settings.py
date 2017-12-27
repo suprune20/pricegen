@@ -144,6 +144,8 @@ CALC_ROUND_EXPONENT = 0
 FS_LOG_FOLDER = 'LOG'
 FS_VENDOR_OUTBOX_FOLDER = 'outbox'
 FS_QUARANTINE_FOLDER = 'QUARANTINE'
+FS_TMP_FOLDER = 'TMP'
+FS_ARCHIVE_FOLDER = 'ARCHIVE'
 FS_STAT_PREFIX = 'pricegen-stat-'
 FS_LOG_PREFIX = 'pricegen-log-'
 FS_ERROR_PREFIX = 'pricegen-error-'
@@ -153,6 +155,8 @@ FS_LOG_EXT = 'log'
 #
 CMD_ZIP = 'xz -z'
 CMD_UNZIP = 'xz -d'
+# Расширение у архивированных файлов
+ZIP_EXT = 'xz'
 
 # ПАРАМЕТРЫ XLSX файлов --------------------------
 #
