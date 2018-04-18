@@ -86,7 +86,7 @@ class Command(BaseCommand):
                 continue
             # пропускаем наш процесс: с нашим именем пользователя и pid процесса
             #
-            if re.search(r'^%s\+?\s+%s\s+' % (userid, pid,), p):
+            if re.search(r'^%s\s+%s\s+' % (userid, pid,), p):
                 continue
             print('Another same process running. Do not want problems. Quit.')
             quit()
