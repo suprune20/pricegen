@@ -76,7 +76,7 @@ class Command(BaseCommand):
 
         # Нельзя запускать, если другой аналогичные процесс крутится
         #
-        ps = subprocess.check_output(('ps', '-ef',)).decode('utf-8').split('\n')
+        ps = subprocess.check_output(('ps', '-eo', 'user:30,pid:10,cmd')).decode('utf-8').split('\n')
         userid = pwd.getpwuid(os.getuid()).pw_name
         pid = os.getpid()
         for p in ps:
@@ -86,7 +86,7 @@ class Command(BaseCommand):
                 continue
             # пропускаем наш процесс: с нашим именем пользователя и pid процесса
             #
-            if re.search(r'^%s\s+%s\s+' % (userid, pid,), p):
+            if re.search(r'^%s\+?\s+%s\s+' % (userid, pid,), p):
                 continue
             print('Another same process running. Do not want problems. Quit.')
             quit()
